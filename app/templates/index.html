@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Healthcare Patient API</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#f4f6f9;--surface:white;--text:#222;--text2:#666;--text3:#999;--border:#e8e8e8;--accent:#185FA5;--accent2:#0C447C;--green:#3B6D11;--green-bg:#EAF3DE;--amber:#854F0B;--amber-bg:#FAEEDA;--blue-bg:#E6F1FB}
+    .dark{--bg:#1a1a1a;--surface:#242424;--text:#e8e8e8;--text2:#aaa;--text3:#666;--border:#333}
+    body{background:var(--bg);color:var(--text);font-family:Arial,sans-serif;padding:20px;transition:background .2s,color .2s;min-height:100vh}
+    .topbar{background:var(--surface);border-radius:10px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+    .app-title{font-size:15px;font-weight:700;color:var(--accent)}
+    .badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;background:var(--blue-bg);color:var(--accent);margin-left:5px}
+    .badge-g{background:var(--green-bg);color:var(--green)}
+    .dark-toggle{cursor:pointer;background:var(--border);border:none;border-radius:20px;padding:5px 14px;font-size:12px;color:var(--text2)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+    .stat{background:var(--surface);border-radius:10px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+    .stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+    .stat-val{font-size:22px;font-weight:700}
+    .blue{color:var(--accent)}.green{color:var(--green)}.amber{color:var(--amber)}
+    .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+    .tab{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2)}
+    .tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+    .section{display:none}.section.active{display:block}
+    .card{background:var(--surface);border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:12px}
+    .card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+    .form-group{display:flex;flex-direction:column;gap:4px}
+    .form-label{font-size:12px;color:var(--text2);font-weight:600}
+    input,select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text)}
+    .btn{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text)}
+    .btn-primary{background:var(--accent);color:white;border-color:var(--accent)}
+    .btn-primary:hover{background:var(--accent2)}
+    .btn-sm{padding:4px 12px;font-size:12px}
+    .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .response-box{background:var(--bg);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;margin-top:10px;white-space:pre-wrap;min-height:40px;color:var(--text2);border:1px solid var(--border)}
+    .pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700}
+    .pill-ok{background:var(--green-bg);color:var(--green)}
+    .pill-pending{background:var(--amber-bg);color:var(--amber)}
+    .pill-info{background:var(--blue-bg);color:var(--accent)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;border-bottom:2px solid var(--border)}
+    td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--bg)}
+    .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:6px;vertical-align:middle}
+    .av-b{background:var(--blue-bg);color:var(--accent)}
+    .av-g{background:var(--green-bg);color:var(--green)}
+    .av-a{background:var(--amber-bg);color:var(--amber)}
+    .sec-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+    .sec-row:last-child{border-bottom:none}
+    .log-row{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+    .log-row:last-child{border-bottom:none}
+    .log-time{color:var(--text3);font-family:monospace;min-width:75px}
+    .log-action{font-weight:700;min-width:140px}
+    .log-ok{color:var(--green)}.log-warn{color:var(--amber)}.log-info{color:var(--accent)}
+    .log-detail{color:var(--text2)}
+    .get-row{display:flex;gap:8px;align-items:center}
+    .get-row input{flex:1}
+    @media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <span class="app-title">Healthcare Patient API</span>
+    <span class="badge">HIPAA</span>
+    <span class="badge badge-g">Secured</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:12px;color:var(--text3)">DevSecOps — Exp 3</span>
+    <button class="dark-toggle" onclick="toggleDark()" id="dm-btn">🌙 Dark mode</button>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">Total patients</div><div class="stat-val blue" id="count">0</div></div>
+  <div class="stat"><div class="stat-label">API status</div><div class="stat-val green" style="font-size:16px" id="api-status">Checking...</div></div>
+  <div class="stat"><div class="stat-label">Security gates</div><div class="stat-val green">5 / 5</div></div>
+  <div class="stat"><div class="stat-label">Critical CVEs</div><div class="stat-val amber">0</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('register')">Register patient</button>
+  <button class="tab" onclick="showTab('list')">Patient list</button>
+  <button class="tab" onclick="showTab('lookup')">Get by ID</button>
+  <button class="tab" onclick="showTab('audit')">Audit log</button>
+  <button class="tab" onclick="showTab('security')">Security posture</button>
+</div>
+
+<!-- REGISTER -->
+<div id="tab-register" class="section active">
+  <div class="card">
+    <div class="card-title">Register new patient</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="John Doe" /></div>
+      <div class="form-group"><label class="form-label">Date of birth</label><input type="date" id="reg-dob" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Blood type</label>
+        <select id="reg-blood">
+          <option value="">Select blood type</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">X-API-Token</label><input type="text" id="reg-token" placeholder="Secure-API-xxxxx" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="clearForm()">Clear</button>
+      <button class="btn btn-primary" onclick="registerPatient()">Register patient</button>
+    </div>
+    <div class="response-box" id="reg-response">Response will appear here...</div>
+  </div>
+</div>
+
+<!-- PATIENT LIST -->
+<div id="tab-list" class="section">
+  <div class="card">
+    <div class="card-title">
+      <span>All patients</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="list-token" placeholder="X-API-Token" style="width:180px" />
+        <button class="btn btn-primary btn-sm" onclick="loadPatients()">Fetch list</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Patient</th><th>ID</th><th>Blood type</th><th>Created</th><th>Status</th></tr></thead>
+      <tbody id="patient-tbody">
+        <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Enter your API token and click Fetch list</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- GET BY ID -->
+<div id="tab-lookup" class="section">
+  <div class="card">
+    <div class="card-title">Get patient by ID</div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label class="form-label">X-API-Token</label>
+      <input type="text" id="lookup-token" placeholder="Secure-API-xxxxx" />
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label class="form-label">Patient ID</label>
+      <div class="get-row">
+        <input type="text" id="lookup-id" placeholder="e.g. a3f12b9c8e4d" />
+        <button class="btn btn-primary" onclick="lookupPatient()">Lookup</button>
+      </div>
+    </div>
+    <div class="response-box" id="lookup-response">Response will appear here...</div>
+  </div>
+</div>
+
+<!-- AUDIT LOG -->
+<div id="tab-audit" class="section">
+  <div class="card">
+    <div class="card-title">
+      <span>Audit trail — recent API activity</span>
+      <button class="btn btn-sm" onclick="clearAudit()">Clear</button>
+    </div>
+    <div id="audit-log">
+      <div class="log-row"><span class="log-time">—</span><span class="log-action log-info">SYSTEM</span><span class="log-detail">Audit log starts here — actions will appear as you use the API</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div id="tab-security" class="section">
+  <div class="card">
+    <div class="card-title">Security posture</div>
+    <div class="sec-row">
+      <span style="color:var(--green);font-size:18px;font-weight:700">✓</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">OWASP dependency check</div><div style="font-size:11px;color:var(--text3)">No CVEs above CVSS 7 in requirements.txt</div></div>
+      <span class="pill pill-ok">Passed</span>
+    </div>
+    <div class="sec-row">
+      <span style="color:var(--green);font-size:18px;font-weight:700">✓</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">SonarQube analysis</div><div style="font-size:11px;color:var(--text3)">Quality gate passed — 0 code smells</div></div>
+      <span class="pill pill-ok">Passed</span>
+    </div>
+    <div class="sec-row">
+      <span style="color:var(--green);font-size:18px;font-weight:700">✓</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">Trivy container scan</div><div style="font-size:11px;color:var(--text3)">0 CRITICAL vulnerabilities in Docker image</div></div>
+      <span class="pill pill-ok">Passed</span>
+    </div>
+    <div class="sec-row">
+      <span style="color:var(--accent);font-size:18px;font-weight:700">●</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">Kubernetes RBAC</div><div style="font-size:11px;color:var(--text3)">Non-root uid=10001, read-only filesystem enforced</div></div>
+      <span class="pill pill-info">Active</span>
+    </div>
+    <div class="sec-row">
+      <span style="color:var(--green);font-size:18px;font-weight:700">✓</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">Kubernetes secrets</div><div style="font-size:11px;color:var(--text3)">Injected as env vars — never stored in Git</div></div>
+      <span class="pill pill-ok">Passed</span>
+    </div>
+    <div class="sec-row">
+      <span style="color:var(--green);font-size:18px;font-weight:700">✓</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">Network policy</div><div style="font-size:11px;color:var(--text3)">Ingress/egress restricted to allowed pods only</div></div>
+      <span class="pill pill-ok">Active</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const colors = ['av-b','av-g','av-a'];
+  let auditEntries = [];
+  let dark = false;
+
+  function toggleDark() {
+    dark = !dark;
+    document.body.classList.toggle('dark', dark);
+    document.getElementById('dm-btn').textContent = dark ? '☀️ Light mode' : '🌙 Dark mode';
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function clearForm() {
+    ['reg-name','reg-dob','reg-token'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('reg-blood').selectedIndex = 0;
+    document.getElementById('reg-response').textContent = 'Response will appear here...';
+  }
+
+  function addAudit(action, detail, type) {
+    const now = new Date().toTimeString().slice(0,8);
+    auditEntries.unshift({time: now, action, detail, type});
+    renderAudit();
+  }
+
+  function renderAudit() {
+    const el = document.getElementById('audit-log');
+    el.innerHTML = auditEntries.map(e =>
+      `<div class="log-row">
+        <span class="log-time">${e.time}</span>
+        <span class="log-action log-${e.type}">${e.action}</span>
+        <span class="log-detail">${e.detail}</span>
+      </div>`
+    ).join('');
+  }
+
+  function clearAudit() {
+    auditEntries = [];
+    document.getElementById('audit-log').innerHTML =
+      '<div class="log-row"><span class="log-time">—</span><span class="log-action log-info">SYSTEM</span><span class="log-detail">Audit log cleared</span></div>';
+  }
+
+  async function registerPatient() {
+    const token = document.getElementById('reg-token').value.trim();
+    const name  = document.getElementById('reg-name').value.trim();
+    const dob   = document.getElementById('reg-dob').value;
+    const blood = document.getElementById('reg-blood').value;
+    const box   = document.getElementById('reg-response');
+
+    if (!name || !dob || !token) {
+      box.textContent = 'Error: Name, date of birth, and API token are required.';
+      addAudit('VALIDATION_ERROR', 'Missing required fields', 'warn');
+      return;
+    }
+    try {
+      const r = await fetch('/api/patients', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-API-Token': token},
+        body: JSON.stringify({name, dob, blood_type: blood})
+      });
+      const d = await r.json();
+      box.textContent = JSON.stringify(d, null, 2);
+      if (r.status === 201) {
+        const c = document.getElementById('count');
+        c.textContent = parseInt(c.textContent) + 1;
+        addAudit('CREATE_PATIENT', `patient_id=${d.patient_id} name=${name}`, 'ok');
+      } else if (r.status === 401) {
+        addAudit('UNAUTHORIZED', 'Invalid or missing API token', 'warn');
+      }
+    } catch(e) {
+      box.textContent = 'Network error: ' + e.message;
+      addAudit('NETWORK_ERROR', e.message, 'warn');
+    }
+  }
+
+  async function loadPatients() {
+    const token = document.getElementById('list-token').value.trim();
+    const tbody = document.getElementById('patient-tbody');
+    if (!token) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">Please enter your API token</td></tr>';
+      return;
+    }
+    try {
+      const r = await fetch('/api/patients', {headers: {'X-API-Token': token}});
+      if (r.status === 401) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--amber);padding:16px">401 — Unauthorized. Check your API token.</td></tr>';
+        addAudit('UNAUTHORIZED', 'LIST_PATIENTS — invalid token', 'warn');
+        return;
+      }
+      const d = await r.json();
+      document.getElementById('count').textContent = d.count;
+      addAudit('LIST_PATIENTS', `count=${d.count}`, 'info');
+      if (!d.patients || d.patients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">No patients registered yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.patients.map((p, i) => {
+        const initials = p.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+        const av = colors[i % colors.length];
+        const created = p.created_at ? p.created_at.slice(0,10) : '—';
+        return `<tr>
+          <td><span class="avatar ${av}">${initials}</span>${p.name}</td>
+          <td style="font-family:monospace;font-size:11px">${p.id}</td>
+          <td>${p.blood_type || '—'}</td>
+          <td>${created}</td>
+          <td><span class="pill pill-ok">Active</span></td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--amber);padding:16px">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  async function lookupPatient() {
+    const token = document.getElementById('lookup-token').value.trim();
+    const pid   = document.getElementById('lookup-id').value.trim();
+    const box   = document.getElementById('lookup-response');
+    if (!token || !pid) {
+      box.textContent = 'Error: Both API token and patient ID are required.';
+      return;
+    }
+    try {
+      const r = await fetch(`/api/patients/${pid}`, {headers: {'X-API-Token': token}});
+      const d = await r.json();
+      box.textContent = JSON.stringify(d, null, 2);
+      if (r.status === 200) addAudit('GET_PATIENT', `patient_id=${pid}`, 'info');
+      else if (r.status === 401) addAudit('UNAUTHORIZED', `GET_PATIENT patient_id=${pid}`, 'warn');
+      else if (r.status === 404) addAudit('NOT_FOUND', `patient_id=${pid}`, 'warn');
+    } catch(e) {
+      box.textContent = 'Network error: ' + e.message;
+    }
+  }
+
+  async function checkHealth() {
+    try {
+      const r = await fetch('/health');
+      const d = await r.json();
+      const el = document.getElementById('api-status');
+      el.textContent = d.status === 'healthy' ? 'Healthy' : 'Degraded';
+      el.style.color = d.status === 'healthy' ? 'var(--green)' : 'var(--amber)';
+      addAudit('HEALTH_CHECK', `status=${d.status}`, 'info');
+    } catch {
+      document.getElementById('api-status').textContent = 'Down';
+      document.getElementById('api-status').style.color = 'var(--amber)';
+    }
+  }
+
+  checkHealth();
+</script>
+</body>
+</html>
