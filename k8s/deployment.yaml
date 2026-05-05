@@ -6,39 +6,50 @@ metadata:
   labels:
     app: healthcare-api
     compliance: hipaa
+
 spec:
   replicas: 2
+
   selector:
     matchLabels:
       app: healthcare-api
+
   template:
     metadata:
       labels:
         app: healthcare-api
+
     spec:
       serviceAccountName: healthcare-app-sa
       automountServiceAccountToken: false
+
       containers:
       - name: healthcare-api
-        image: YOUR_DOCKERHUB_USERNAME/healthcare-api:latest
+        image: kbsanchai/healthcare-api:latest   # ✅ FIXED IMAGE
+
         ports:
         - containerPort: 5000
+
         env:
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: healthcare-secrets
               key: db-password
+
         - name: API_TOKEN
           valueFrom:
             secretKeyRef:
               name: healthcare-secrets
               key: api-token
+
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: healthcare-secrets
               key: secret-key
+
+        # 🔐 REQUIRED FOR RESTRICTED POLICY
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -47,6 +58,9 @@ spec:
           readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
+          seccompProfile:
+            type: RuntimeDefault
+
         resources:
           requests:
             memory: "128Mi"
@@ -54,21 +68,25 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "500m"
+
         livenessProbe:
           httpGet:
             path: /health
             port: 5000
           initialDelaySeconds: 30
           periodSeconds: 15
+
         readinessProbe:
           httpGet:
             path: /health
             port: 5000
           initialDelaySeconds: 10
           periodSeconds: 10
+
         volumeMounts:
         - name: tmp-dir
           mountPath: /tmp
+
       volumes:
       - name: tmp-dir
         emptyDir: {}
