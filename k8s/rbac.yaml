@@ -10,12 +10,25 @@ metadata:
   name: healthcare-app-role
   namespace: healthcare
 rules:
+# Access to ConfigMaps
 - apiGroups: [""]
   resources: ["configmaps"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "watch"]
+
+# Access to Secrets (FIXED)
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: []
+  verbs: ["get", "list", "create", "update", "delete"]
+
+# (Optional but recommended for app)
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"]
+
+# (Optional for deployments)
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
