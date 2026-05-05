@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    DOCKER_HUB_USER = 'your-dockerhub-username'
+    DOCKER_HUB_USER = 'kbsanchai'
     IMAGE_NAME      = "${DOCKER_HUB_USER}/healthcare-api"
     FULL_IMAGE      = "${IMAGE_NAME}:${BUILD_NUMBER}"
     KUBECONFIG      = '/var/lib/jenkins/.kube/config'
@@ -29,6 +29,7 @@ pipeline {
             --format HTML \
             --format JSON \
             --out "./dependency-check-report" \
+            --nvdApiKey YOUR_NVD_API_KEY_HERE \
             --failOnCVSS 7 \
             --enableRetired || true
           echo "OWASP scan completed"
@@ -52,7 +53,7 @@ pipeline {
       steps {
         sh '''
           cd app
-          pip install -r requirements.txt --quiet --break-system-packages
+          python3 -m pip install -r requirements.txt --quiet --break-system-packages
           python3 -m pytest tests/ -v --tb=short --junitxml=../test-results.xml
         '''
       }
@@ -79,7 +80,8 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+          archiveArtifacts artifacts: 'trivy-report.json',
+                           allowEmptyArchive: true
         }
       }
     }
@@ -104,9 +106,27 @@ pipeline {
     stage('Apply Security Policies') {
       steps {
         sh '''
-          kubectl apply -f k8s/namespace.yaml --kubeconfig=${KUBECONFIG}
-          kubectl apply -f k8s/rbac.yaml --kubeconfig=${KUBECONFIG}
-          kubectl apply -f k8s/network-policy.yaml --kubeconfig=${KUBECONFIG}
+          kubectl apply -f k8s/namespace.yaml \
+            --kubeconfig=${KUBECONFIG}
+          kubectl apply -f k8s/rbac.yaml \
+            --kubeconfig=${KUBECONFIG}
+          kubectl apply -f k8s/network-policy.yaml \
+            --kubeconfig=${KUBECONFIG}
+        '''
+      }
+    }
+
+    stage('Create Secrets') {
+      steps {
+        sh '''
+          kubectl create secret generic healthcare-secrets \
+            --from-literal=db-password="SuperSecure@DB2024" \
+            --from-literal=api-token="Secure-API-Token-123456" \
+            --from-literal=secret-key="my-secret-key-here" \
+            --namespace=${NAMESPACE} \
+            --kubeconfig=${KUBECONFIG} \
+            --dry-run=client -o yaml | \
+          kubectl apply -f - --kubeconfig=${KUBECONFIG}
         '''
       }
     }
@@ -114,9 +134,12 @@ pipeline {
     stage('Secure Deploy') {
       steps {
         sh '''
-          sed -i "s|YOUR_DOCKERHUB_USERNAME|${DOCKER_HUB_USER}|g" k8s/deployment.yaml
-          kubectl apply -f k8s/deployment.yaml --kubeconfig=${KUBECONFIG}
-          kubectl apply -f k8s/service.yaml --kubeconfig=${KUBECONFIG}
+          sed -i "s|YOUR_DOCKERHUB_USERNAME|${DOCKER_HUB_USER}|g" \
+            k8s/deployment.yaml
+          kubectl apply -f k8s/deployment.yaml \
+            --kubeconfig=${KUBECONFIG}
+          kubectl apply -f k8s/service.yaml \
+            --kubeconfig=${KUBECONFIG}
           kubectl rollout status deployment/healthcare-api \
             -n ${NAMESPACE} \
             --timeout=300s \
@@ -129,16 +152,29 @@ pipeline {
       steps {
         sh '''
           echo "=== Pods ==="
-          kubectl get pods -n ${NAMESPACE} --kubeconfig=${KUBECONFIG}
+          kubectl get pods -n ${NAMESPACE} \
+            --kubeconfig=${KUBECONFIG}
 
           echo "=== Network Policies ==="
-          kubectl get networkpolicies -n ${NAMESPACE} --kubeconfig=${KUBECONFIG}
+          kubectl get networkpolicies -n ${NAMESPACE} \
+            --kubeconfig=${KUBECONFIG}
 
           echo "=== RBAC Bindings ==="
-          kubectl get rolebindings -n ${NAMESPACE} --kubeconfig=${KUBECONFIG}
+          kubectl get rolebindings -n ${NAMESPACE} \
+            --kubeconfig=${KUBECONFIG}
 
           echo "=== Service ==="
-          kubectl get svc -n ${NAMESPACE} --kubeconfig=${KUBECONFIG}
+          kubectl get svc -n ${NAMESPACE} \
+            --kubeconfig=${KUBECONFIG}
+
+          echo "=== Verify Non-Root User ==="
+          kubectl exec -n ${NAMESPACE} \
+            $(kubectl get pod -n ${NAMESPACE} \
+              -l app=healthcare-api \
+              -o jsonpath="{.items[0].metadata.name}" \
+              --kubeconfig=${KUBECONFIG}) \
+            -- id \
+            --kubeconfig=${KUBECONFIG} || true
         '''
       }
     }
