@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthcare-api
+  namespace: healthcare
+  labels:
+    app: healthcare-api
+    compliance: hipaa
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: healthcare-api
+  template:
+    metadata:
+      labels:
+        app: healthcare-api
+    spec:
+      serviceAccountName: healthcare-app-sa
+      automountServiceAccountToken: false
+      containers:
+      - name: healthcare-api
+        image: YOUR_DOCKERHUB_USERNAME/healthcare-api:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: healthcare-secrets
+              key: db-password
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: healthcare-secrets
+              key: api-token
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: healthcare-secrets
+              key: secret-key
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: tmp-dir
+          mountPath: /tmp
+      volumes:
+      - name: tmp-dir
+        emptyDir: {}
