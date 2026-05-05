@@ -29,7 +29,7 @@ pipeline {
             --format HTML \
             --format JSON \
             --out "./dependency-check-report" \
-            --nvdApiKey YOUR_NVD_API_KEY_HERE \
+            --nvdApiKey Secure-API-27f959c433bcdc79798db6165842daa2 \
             --failOnCVSS 7 \
             --enableRetired || true
           echo "OWASP scan completed"
